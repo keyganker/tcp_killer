@@ -135,20 +135,17 @@ def tcp_kill(local_addr, local_port, remote_addr, remote_port, verbose=False):
       r"^\[?(.+?)]?:([0-9]{1,5})->\[?(.+?)]?:([0-9]{1,5})$")
   fd_pattern = re.compile(r"^(\d)+")
 
-  field_names = ("PID", "FD", "NAME")
+  field_names = {"PID":1, "FD":1, "NAME":1}
   fields = {}
   pid = None
   sockfd = None
-  for line in subprocess.check_output("lsof -bnlPiTCP -sTCP:ESTABLISHED "
-                                      "2>/dev/null", shell=True).splitlines():
-    words = line.split()
+  for line in subprocess.check_output("lsof -bnlPiTCP -sTCP:ESTABLISHED 2>/dev/null", shell=True).splitlines():
+    words = bytes.decode(line).split()
 
     if len(fields) != len(field_names):
-      for i in xrange(len(words)):
-        for field in field_names:
-          if words[i] == field:
-            fields[field] = i
-            break
+      for i in range(0,len(words)):
+        if words[i] in field_names:
+          fields[words[i]] = i
       if len(fields) != len(field_names):
         raise KeyError("Unexpected field headers in output of lsof command.")
       continue
@@ -162,8 +159,8 @@ def tcp_kill(local_addr, local_port, remote_addr, remote_port, verbose=False):
       pid = int(words[fields["PID"]])
       sockfd = int(fd_pattern.match(words[fields["FD"]]).group(1))
       if verbose:
-        print "Process ID of socket's process: %d" % pid
-        print "Socket file descriptor: %d" % sockfd
+        print("Process ID of socket's process: %d" % pid)
+        print("Socket file descriptor: %d" % sockfd)
       break
 
   if not sockfd:
@@ -221,12 +218,12 @@ if __name__ == "__main__":
   class ArgParser(argparse.ArgumentParser):
 
     def error(self, message):
-      print "tcp_killer v" + __version__
-      print "by " + __author__
-      print
-      print "Error: " + message
-      print
-      print self.format_help().replace("usage:", "Usage:")
+      print("tcp_killer v" + __version__)
+      print("by " + __author__)
+      print("\n")
+      print("Error: " + message)
+      print("\n")
+      print(self.format_help().replace("usage:", "Usage:"))
       self.exit(0)
 
   parser = ArgParser(
@@ -268,4 +265,4 @@ Examples:
   tcp_kill(local_address, int(local.group(2)), remote_address,
            int(remote.group(2)), parsed.verbose)
 
-  print "TCP connection was successfully shutdown."
+  print("TCP connection was successfully shutdown.")
